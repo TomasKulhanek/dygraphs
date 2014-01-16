@@ -2,6 +2,7 @@
  * @license
  * Copyright 2006 Dan Vanderkam (danvdk@gmail.com)
  * MIT-licensed (http://opensource.org/licenses/MIT)
+ * tomaton hacks for x-y graphs 
  */
 
 /**
@@ -360,7 +361,8 @@ Dygraph.DEFAULT_ATTRS = {
       independentTicks: false,
       ticker: null  // will be set in dygraph-tickers.js
     }
-  }
+  },
+    tomatonSelectXY: false
 };
 
 // Directions for panning and zooming. Use bit operations when combined
@@ -375,6 +377,10 @@ Dygraph.PLUGINS = [
 
 // Used for initializing annotation CSS rules only once.
 Dygraph.addedAnnotationCSS = false;
+
+//FIX (tomaton)initial value
+Dygraph.prototype.maxXindex = null;
+Dygraph.prototype.minXindex = null;
 
 Dygraph.prototype.__old_init__ = function(div, file, labels, attrs) {
   // Labels is no longer a constructor parameter, since it's typically set
@@ -439,6 +445,12 @@ Dygraph.prototype.__init__ = function(div, file, attrs) {
   // Zoomed indicators - These indicate when the graph has been zoomed and on what axis.
   this.zoomed_x_ = false;
   this.zoomed_y_ = false;
+
+    //fix(tomaton)
+    this.minXindex = null;
+    this.maxXindex = null;
+    Dygraph.prototype.minXindex = null;
+    Dygraph.prototype.maxXindex = null;
 
   // Clear the div. This ensure that, if multiple dygraphs are passed the same
   // div, then only one will be drawn.
@@ -782,9 +794,13 @@ Dygraph.prototype.xAxisExtremes = function() {
   if (this.numRows() === 0) {
     return [0 - pad, 1 + pad];
   }
-  var left = this.rawData_[0][0];
-  var right = this.rawData_[this.rawData_.length - 1][0];
-  if (pad) {
+//  var left = this.rawData_[0][0];
+//  var right = this.rawData_[this.rawData_.length - 1][0];
+    //tomaton modification
+    var left = this.rawData_[this.findMinXindex(this.rawData_)][0];
+    var right = this.rawData_[this.findMaxXindex(this.rawData_)][0];
+    //console.log("limits for graph:"+left+" .. "+right);
+    if (pad) {
     // Must keep this in sync with dygraph-layout _evaluateLimits()
     var range = right - left;
     left -= range * pad;
@@ -1016,6 +1032,40 @@ Dygraph.prototype.numColumns = function() {
 Dygraph.prototype.numRows = function() {
   if (!this.rawData_) return 0;
   return this.rawData_.length;
+};
+//FIX(tomaton)
+Dygraph.prototype.findMaxXindex = function (arr) {
+    if (this.maxXindex === null) {
+        this.maxXindex = 0;
+        var x2 = arr[0][0];
+        for (var maxi = 1; maxi < arr.length; maxi++) {
+            var elem = arr[maxi][0];
+            if (elem > x2) { x2 = elem; this.maxXindex = maxi; }
+        }
+        //console.log("maximum x:"+x2);
+        //console.log("index "+this.maxXindex);
+        //console.log("lastelement:"+arr[arr.length - 1][0]);
+    }
+    //    console.log("maximum x index:" + this.maxXindex);
+    //    console.log("element:" + arr[this.maxXindex]);
+
+    return this.maxXindex;
+};
+
+//FIX(tomaton)
+Dygraph.prototype.findMinXindex = function (arr) {
+    if (this.minXindex === null) {
+        this.minXindex = 0;
+        var x2 = arr[0][0];
+        for (var maxi = 1; maxi < arr.length; maxi++) {
+            var elem = arr[maxi][0];
+            if (elem < x2) { x2 = elem; this.minXindex = maxi; }
+        }
+        //console.log("minimum x:"+x2);
+        //console.log("index "+this.minXindex);
+        //console.log("firstelement:"+arr[0][0]);
+    }
+    return this.minXindex;
 };
 
 /**
@@ -1881,6 +1931,7 @@ Dygraph.prototype.mouseMove_ = function(event) {
   var canvasy = canvasCoords[1];
 
   var highlightSeriesOpts = this.getOption("highlightSeriesOpts");
+  var tomatonSelectXY = this.attr_ ("tomatonSelectXY");
   var selectionChanged = false;
   if (highlightSeriesOpts && !this.isSeriesLocked()) {
     var closest;
@@ -1891,8 +1942,19 @@ Dygraph.prototype.mouseMove_ = function(event) {
     }
     selectionChanged = this.setSelection(closest.row, closest.seriesName);
   } else {
-    var idx = this.findClosestRow(canvasx);
-    selectionChanged = this.setSelection(idx);
+    var idx;// = this.findClosestRow(canvasx);
+    //selectionChanged = this.setSelection(idx);
+      if (tomatonSelectXY) {
+          idx = this.findClosestPoint(canvasx,canvasy);
+          //console.log("tomatonSelectXY yes "+idx);
+          selectionChanged = this.setSelection(idx.row);
+      }
+      else {
+          idx = this.findClosestRow(canvasx);
+          //console.log("tomatonSelectXY no "+idx);
+          selectionChanged = this.setSelection(idx);
+      }
+
   }
 
   var callback = this.getFunctionOption("highlightCallback");
@@ -2366,7 +2428,7 @@ Dygraph.stackPoints_ = function(
 
     var actualYval = point.yval;
     if (isNaN(actualYval) || actualYval === null) {
-      if(fillMethod == 'none') {
+          if(fillMethod == 'none') {
         actualYval = 0;
       } else {
         // Interpolate/extend for stacking purposes if possible.

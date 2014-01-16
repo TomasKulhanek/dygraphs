@@ -182,10 +182,15 @@ DygraphLayout.prototype.evaluate = function() {
 };
 
 DygraphLayout.prototype._evaluateLimits = function() {
+     //tomaton modification fix xrange when last x value is not the highest in case of x = sin(y) x is from 0 to 1 and back to 0
+    //and range for x is 0 to 1
   var xlimits = this.dygraph_.xAxisRange();
+    this.minxval = this.maxxval = null;
+    //if (this.dateWindow_) {
   this.minxval = xlimits[0];
   this.maxxval = xlimits[1];
-  var xrange = xlimits[1] - xlimits[0];
+    
+  var xrange = this.maxxval - this.minxval;
   this.xscale = (xrange !== 0 ? 1 / xrange : 1.0);
 
   for (var i = 0; i < this.yAxes_.length; i++) {
