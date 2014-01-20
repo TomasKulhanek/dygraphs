@@ -1035,7 +1035,7 @@ Dygraph.prototype.numRows = function() {
 };
 //FIX(tomaton)
 Dygraph.prototype.findMaxXindex = function (arr) {
-    if (this.maxXindex === null) {
+//    if (this.maxXindex === null) {
         this.maxXindex = 0;
         var x2 = arr[0][0];
         for (var maxi = 1; maxi < arr.length; maxi++) {
@@ -1045,7 +1045,7 @@ Dygraph.prototype.findMaxXindex = function (arr) {
         //console.log("maximum x:"+x2);
         //console.log("index "+this.maxXindex);
         //console.log("lastelement:"+arr[arr.length - 1][0]);
-    }
+  //  }
     //    console.log("maximum x index:" + this.maxXindex);
     //    console.log("element:" + arr[this.maxXindex]);
 
@@ -1054,7 +1054,7 @@ Dygraph.prototype.findMaxXindex = function (arr) {
 
 //FIX(tomaton)
 Dygraph.prototype.findMinXindex = function (arr) {
-    if (this.minXindex === null) {
+//    if (this.minXindex === null) {
         this.minXindex = 0;
         var x2 = arr[0][0];
         for (var maxi = 1; maxi < arr.length; maxi++) {
@@ -1064,7 +1064,7 @@ Dygraph.prototype.findMinXindex = function (arr) {
         //console.log("minimum x:"+x2);
         //console.log("index "+this.minXindex);
         //console.log("firstelement:"+arr[0][0]);
-    }
+//    }
     return this.minXindex;
 };
 
